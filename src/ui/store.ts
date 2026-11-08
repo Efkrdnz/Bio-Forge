@@ -77,6 +77,8 @@ export const useUI = create<UIState>((set, get) => ({
   },
 }));
 
+if (typeof window !== 'undefined') (window as unknown as { __bioforgeUI: () => UIState }).__bioforgeUI = () => useUI.getState();
+
 /** Shared microscope camera for the dish view. */
 export const dishCamera = new Camera();
 if (typeof window !== 'undefined') (window as unknown as { bioforgeCam: Camera }).bioforgeCam = dishCamera;

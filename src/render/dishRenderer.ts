@@ -310,9 +310,9 @@ export class DishRenderer {
         ctx.stroke();
       }
       // emission ripple
-      if (c.flash > 0.25 && c.cd.byType[T.emitter].length) {
+      if (c.flash > 0.25 && sr > 6 && c.cd.byType[T.emitter].length) {
         const u = 1 - c.flash;
-        ctx.strokeStyle = `rgba(255,120,230,${c.flash * 0.5})`;
+        ctx.strokeStyle = `rgba(255,120,230,${c.flash * 0.3})`;
         ctx.lineWidth = 1.2 / z;
         ctx.beginPath();
         ctx.arc(c.x, c.y, c.radius * (1.4 + u * 3), 0, TAU);

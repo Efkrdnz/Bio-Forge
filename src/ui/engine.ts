@@ -172,6 +172,8 @@ export class Engine {
     this.world = w;
     this.worldEpoch++;
     this.timeline = this.timeline.filter((e) => e.tick <= entry.tick);
+    // Pause on the restored moment so it can be examined before resuming.
+    this.running = false;
     this.notify();
   }
 
@@ -296,6 +298,7 @@ export class Engine {
       this.worldEpoch++;
       this.timeline = [];
       this.snapshotNow('loaded');
+      this.running = false;
       this.notify();
       return { ok: true, message: `Loaded world at tick ${w.tick}` };
     } catch (e) {
