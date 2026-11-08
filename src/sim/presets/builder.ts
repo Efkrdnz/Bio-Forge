@@ -42,7 +42,7 @@ export function buildDesign(
     },
     node(kind, x, y, params, ref, port) {
       const id2 = nid++;
-      d.circuit.nodes.push({ id: id2, kind, x, y, params: { ...defaultNodeParams(kind), ...(params ?? {}) }, ref, port });
+      d.circuit.nodes.push({ id: id2, kind, x: Math.round(x * 1.3), y: Math.round(y * 1.15), params: { ...defaultNodeParams(kind), ...(params ?? {}) }, ref, port });
       return id2;
     },
     wire(from, to, slot = 0) {

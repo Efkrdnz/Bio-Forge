@@ -331,7 +331,7 @@ function drawCytoplasm(ctx: CanvasRenderingContext2D, L: CellLook, t: number, hu
   for (let k = 0; k < n; k++) {
     const a = k * 2.399 + L.phase + t * 0.15 * (k % 2 ? 1 : -1);
     const rr = L.r * (0.25 + 0.6 * ((k * 0.618) % 1));
-    const s = L.r * 0.028 * (1 + (k % 3));
+    const s = L.r * 0.016 * (1 + (k % 3));
     ctx.beginPath();
     ctx.arc(L.x + Math.cos(a) * rr, L.y + Math.sin(a) * rr, s, 0, TAU);
     ctx.fill();
@@ -369,13 +369,13 @@ function drawConduits(ctx: CanvasRenderingContext2D, L: CellLook, o: DrawOpts, a
     const mx = (ax + bx) * 0.38;
     const my = (ay + by) * 0.38;
     ctx.strokeStyle = `rgba(160,240,255,${0.32 * alpha})`;
-    ctx.lineWidth = L.r * 0.07;
+    ctx.lineWidth = L.r * 0.045;
     ctx.beginPath();
     ctx.moveTo(ax, ay);
     ctx.quadraticCurveTo(mx, my, bx, by);
     ctx.stroke();
     ctx.strokeStyle = `rgba(10,30,40,${0.5 * alpha})`;
-    ctx.lineWidth = L.r * 0.03;
+    ctx.lineWidth = L.r * 0.02;
     ctx.stroke();
     // flowing particles
     const mag = Math.min(1, Math.abs(k.flow) * 25);
@@ -390,7 +390,7 @@ function drawConduits(ctx: CanvasRenderingContext2D, L: CellLook, o: DrawOpts, a
         const py = iu * iu * ay + 2 * iu * u * my + u * u * by;
         ctx.globalAlpha = (0.4 + 0.6 * mag) * alpha;
         ctx.beginPath();
-        ctx.arc(px, py, L.r * 0.045, 0, TAU);
+        ctx.arc(px, py, L.r * 0.028, 0, TAU);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
