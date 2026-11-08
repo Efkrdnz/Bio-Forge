@@ -39,6 +39,7 @@ export class DishRenderer {
   private looks = new Map<number, CellLook>();
   private bg: HTMLCanvasElement | OffscreenCanvas | null = null;
   private bgKey = '';
+  private vignette: HTMLCanvasElement | OffscreenCanvas | null = null;
   private frame = 0;
 
   constructor(nParticles = 900) {
@@ -144,6 +145,13 @@ export class DishRenderer {
       g.lineTo(w, y + 0.5);
       g.stroke();
     }
+    this.vignette = makeCanvas(w, h);
+    const vg = this.vignette.getContext('2d') as CanvasRenderingContext2D;
+    const grd2 = vg.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.max(w, h) * 0.72);
+    grd2.addColorStop(0, 'rgba(0,0,0,0)');
+    grd2.addColorStop(1, 'rgba(0,0,0,0.55)');
+    vg.fillStyle = grd2;
+    vg.fillRect(0, 0, w, h);
   }
 
   private seedParticle(world: World, k: number) {
@@ -364,11 +372,7 @@ export class DishRenderer {
 
     // Microscope vignette in screen space
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.72);
-    vg.addColorStop(0, 'rgba(0,0,0,0)');
-    vg.addColorStop(1, 'rgba(0,0,0,0.55)');
-    ctx.fillStyle = vg;
-    ctx.fillRect(0, 0, W, H);
+    if (this.vignette) ctx.drawImage(this.vignette as CanvasImageSource, 0, 0, W, H);
   }
 
   private drawBonds(ctx: CanvasRenderingContext2D, world: World, cam: Camera, opts: RenderOptions, t: number) {

@@ -216,6 +216,8 @@ export interface CompiledDesign {
   lifespan: number;
   /** Indices of components by type id (for quick iteration). */
   byType: number[][];
+  /** Indices of sensor components (chemoreceptor … homeostat). */
+  sensorIdx: Int16Array;
 }
 
 export const MAX_PARAMS = 4;
@@ -376,6 +378,7 @@ export function compileDesign(design: CellDesign): CompiledDesign {
     fidelity,
     lifespan,
     byType,
+    sensorIdx: Int16Array.from([...Array(n).keys()].filter((i) => types[i] >= TYPE_ID.chemoreceptor && types[i] <= TYPE_ID.homeostat)),
   };
 }
 

@@ -215,6 +215,35 @@ export function drawCellDot(ctx: CanvasRenderingContext2D, x: number, y: number,
   ctx.globalAlpha = 1;
 }
 
+const smallFill = new Map<number, string>();
+const smallRim = new Map<number, string>();
+/** Mid-distance LOD: glow + disc + rim + nucleus, no gradients or wobble paths. */
+function drawCellSmall(ctx: CanvasRenderingContext2D, L: CellLook, hue: number, alpha: number) {
+  const h = Math.round(hue / 6) * 6;
+  let fill = smallFill.get(h);
+  if (!fill) smallFill.set(h, (fill = hsla(h, 70, 52, 0.3)));
+  let rim = smallRim.get(h);
+  if (!rim) smallRim.set(h, (rim = hsla(h, 92, 74, 0.85)));
+  ctx.globalCompositeOperation = 'lighter';
+  const gs = L.r * 3.2;
+  ctx.globalAlpha = (0.14 + L.flash * 0.5) * alpha;
+  ctx.drawImage(hueGlow(hue, 60, 0.8) as CanvasImageSource, L.x - gs / 2, L.y - gs / 2, gs, gs);
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = alpha * (0.55 + 0.45 * L.health);
+  ctx.beginPath();
+  ctx.arc(L.x, L.y, L.r, 0, TAU);
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.lineWidth = L.r * (L.membrane === 'shell' ? 0.16 : 0.09);
+  ctx.strokeStyle = rim;
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(200,160,255,0.9)';
+  ctx.beginPath();
+  ctx.arc(L.x, L.y, L.r * 0.28, 0, TAU);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
 /** Full membrane + body; detail level chosen from on-screen radius. */
 export function drawCell(ctx: CanvasRenderingContext2D, L: CellLook, o: DrawOpts) {
   const screenR = L.r * o.zoom;
@@ -224,6 +253,11 @@ export function drawCell(ctx: CanvasRenderingContext2D, L: CellLook, o: DrawOpts
 
   if (screenR < 2.6) {
     drawCellDot(ctx, L.x, L.y, L.r, hue, L.health * alpha);
+    return;
+  }
+
+  if (screenR < 8 && !o.selected) {
+    drawCellSmall(ctx, L, hue, alpha);
     return;
   }
 
@@ -293,8 +327,8 @@ export function drawCell(ctx: CanvasRenderingContext2D, L: CellLook, o: DrawOpts
     ctx.stroke();
   }
 
-  if (screenR < 7) {
-    // mid-far: nucleus dot only
+  if (screenR < 9) {
+    // mid: nucleus dot only
     ctx.fillStyle = hsla(275, 90, 75, 0.85 * alpha);
     ctx.beginPath();
     ctx.arc(L.x, L.y, L.r * 0.28, 0, TAU);

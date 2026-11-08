@@ -69,13 +69,37 @@ function compGridIndex(w: World, c: Cell, i: number): number {
   return w.env.index(c.x + Math.cos(a) * r, c.y + Math.sin(a) * r);
 }
 
+// Reusable neighbour buffer for proximity sensing (one spatial query per cell)
+let nbBuf: Cell[] = [];
+let nbCount = 0;
+function gatherNeighbours(w: World, c: Cell, range: number) {
+  nbCount = 0;
+  const r = range + c.radius + 16;
+  const r2 = (range + c.radius + 14) ** 2;
+  w.hash.query(c.x, c.y, r, (o) => {
+    if (o === c || !o.alive) return;
+    const dx = o.x - c.x;
+    const dy = o.y - c.y;
+    if (dx * dx + dy * dy > r2 + o.radius * o.radius * 4) return;
+    if (nbCount >= nbBuf.length) nbBuf = nbBuf.concat(new Array<Cell>(64));
+    nbBuf[nbCount++] = o;
+  });
+}
+function maxProximityRange(cd: Cell['cd'], radius: number): number {
+  let m = 0;
+  for (const i of cd.byType[T.proximity]) m = Math.max(m, cd.params[i * MAX_PARAMS]);
+  return m * radius;
+}
+
 export function sense(w: World, c: Cell): void {
   const cd = c.cd;
   const env = w.env;
   const s = c.sensors;
-  for (let i = 0; i < cd.n; i++) {
+  let gathered = false;
+  const list = cd.sensorIdx;
+  for (let k = 0; k < list.length; k++) {
+    const i = list[k];
     const t = cd.types[i];
-    if (t < T.chemoreceptor || t > T.homeostat) continue;
     const o = cd.outOffset[i];
     if (!c.expressed(i)) {
       const nOut = t === T.homeostat ? 6 : t === T.proximity ? 3 : t === T.photoreceptor || t === T.echoreceptor ? 1 : 2;
@@ -115,22 +139,28 @@ export function sense(w: World, c: Cell): void {
         break;
       case T.proximity: {
         const range = p0 * c.radius;
+        if (!gathered) {
+          gatherNeighbours(w, c, maxProximityRange(cd, c.radius));
+          gathered = true;
+        }
         let any = 0;
         let kin = 0;
         let foreign = 0;
-        w.hash.query(px, py, range + 16, (other) => {
-          if (other === c || !other.alive) return;
+        for (let k = 0; k < nbCount; k++) {
+          const other = nbBuf[k];
           const dx = other.x - c.x;
           const dy = other.y - c.y;
-          const d = Math.hypot(dx, dy) - other.radius - c.radius;
-          if (d > range) return;
+          const lim = range + other.radius + c.radius;
+          const d2 = dx * dx + dy * dy;
+          if (d2 > lim * lim) continue;
+          const d = Math.sqrt(d2) - other.radius - c.radius;
           const rel = Math.abs(wrapAngle(Math.atan2(dy, dx) - a));
-          if (rel > Math.PI / 3) return;
+          if (rel > Math.PI / 3) continue;
           const wgt = 1 - Math.max(0, d) / range;
           any += wgt;
           if (other.strain === c.strain || (other.organismId === c.organismId && c.organismId !== 0)) kin += wgt;
           else foreign += wgt;
-        });
+        }
         s[o] = clamp01(any / 2);
         s[o + 1] = clamp01(kin / 2);
         s[o + 2] = clamp01(foreign / 2);

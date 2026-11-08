@@ -149,11 +149,23 @@ export class Environment {
     const W = this.W;
     const i00 = y0 * W + x0;
     const m = this.mask;
-    const c = this.index(x, y);
-    const v00 = m[i00] ? f[i00] : f[c];
-    const v10 = m[i00 + 1] ? f[i00 + 1] : f[c];
-    const v01 = m[i00 + W] ? f[i00 + W] : f[c];
-    const v11 = m[i00 + W + 1] ? f[i00 + W + 1] : f[c];
+    let v00: number;
+    let v10: number;
+    let v01: number;
+    let v11: number;
+    if (m[i00] && m[i00 + 1] && m[i00 + W] && m[i00 + W + 1]) {
+      v00 = f[i00];
+      v10 = f[i00 + 1];
+      v01 = f[i00 + W];
+      v11 = f[i00 + W + 1];
+    } else {
+      // Near the rim: substitute out-of-dish samples with the nearest in-dish value
+      const c = this.index(x, y);
+      v00 = m[i00] ? f[i00] : f[c];
+      v10 = m[i00 + 1] ? f[i00 + 1] : f[c];
+      v01 = m[i00 + W] ? f[i00 + W] : f[c];
+      v11 = m[i00 + W + 1] ? f[i00 + W + 1] : f[c];
+    }
     const a = v00 + (v10 - v00) * tx;
     const b = v01 + (v11 - v01) * tx;
     return a + (b - a) * ty;

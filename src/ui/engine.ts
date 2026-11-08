@@ -122,7 +122,8 @@ export class Engine {
   frame(dt: number) {
     if (!this.running) return;
     this.acc += Math.min(dt, 0.1) * TICKS_PER_SECOND * this.speed;
-    const budget = 14; // ms per frame for simulation
+    // ms per frame for simulation: give fast-forward more time, at some cost in fps
+    const budget = this.speed >= 8 ? 24 : this.speed >= 4 ? 18 : 14;
     const t0 = performance.now();
     let steps = 0;
     while (this.acc >= 1) {

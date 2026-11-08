@@ -5,7 +5,7 @@ input[type='checkbox'] {
 :root {
   --bg: #02060a;
   --bg2: #06111a;
-  --panel: rgba(6, 18, 26, 0.82);
+  --panel: rgba(5, 15, 22, 0.9);
   --panel-solid: #071520;
   --panel2: rgba(10, 30, 42, 0.7);
   --line: rgba(80, 220, 230, 0.16);
@@ -190,7 +190,7 @@ textarea {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  backdrop-filter: blur(10px);
+  /* No backdrop-filter: blurring over the live canvas forces a full re-raster every frame. */
   position: relative;
 }
 .panel.bracket::before,
