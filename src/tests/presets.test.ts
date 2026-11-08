@@ -78,6 +78,26 @@ describe('presets', () => {
     expect(w.goalStatus.g2?.done).toBe(true);
   });
 
+  it('tutorial 2 is solvable: conduits pore → combustor raise net energy past the goal', () => {
+    const w = start('tut-2');
+    const d = cloneDesign(w.designs.get('tut-plumb')!);
+    const comb = d.components.find((c) => c.type === 'combustor')!;
+    for (const p of d.components.filter((c) => c.type === 'pore')) d.conduits.push({ a: p.uid, b: comb.uid });
+    w.registerDesign(d);
+    w.inoculate(d, 4, w.env.cx, w.env.cy, 80);
+    run(w, 1500);
+    expect(w.goalStatus.g1?.done).toBe(true);
+    expect(w.goalStatus.g2?.done).toBe(true);
+  });
+
+  it('tutorial 2 control: without conduits the energy goal stays out of reach', () => {
+    const w = start('tut-2');
+    w.params.mutationRate = 0;
+    run(w, 1500);
+    expect(w.goalStatus.g1?.done).toBe(false);
+    expect(w.goalStatus.g2?.done).toBe(false);
+  });
+
   it('tutorial list is ordered and each has goals and a focus design', () => {
     const t = tutorials();
     expect(t.length).toBeGreaterThanOrEqual(6);

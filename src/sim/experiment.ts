@@ -32,7 +32,8 @@ export type GoalKind =
   | 'tissues'
   | 'depth'
   | 'region'
-  | 'netEnergy';
+  | 'netEnergy'
+  | 'conduits';
 
 export interface Goal {
   id: string;
@@ -132,6 +133,17 @@ export function evaluateGoal(w: World, g: Goal, prev?: GoalStatus): GoalStatus {
       }
       progress = best / (g.n ?? 1);
       text = `${best} / ${g.n ?? 1} in a living design`;
+      break;
+    }
+    case 'conduits': {
+      let best = 0;
+      for (const s of w.strains.values()) {
+        if (s.population <= 0) continue;
+        if (g.designId && s.rootId !== g.designId) continue;
+        best = Math.max(best, s.design.conduits.length);
+      }
+      progress = best / (g.n ?? 1);
+      text = `${best} / ${g.n ?? 1} conduits in a living design`;
       break;
     }
     case 'tissues': {

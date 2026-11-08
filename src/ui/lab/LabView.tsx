@@ -19,6 +19,7 @@ const GOAL_KINDS: { kind: GoalKind; label: string; fields: ('designId' | 'n' | '
   { kind: 'hasComponent', label: 'Living design has component', fields: ['designId', 'component', 'n'] },
   { kind: 'region', label: '≥ n cells inside a zone', fields: ['designId', 'n', 'zone'] },
   { kind: 'netEnergy', label: 'A cell nets ≥ n mC/tick', fields: ['designId', 'n'] },
+  { kind: 'conduits', label: 'Living design has n conduits', fields: ['designId', 'n'] },
 ];
 
 function blankExperiment(): ExperimentDef {

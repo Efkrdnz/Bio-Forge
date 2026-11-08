@@ -97,8 +97,8 @@ export function tutorials(): ExperimentDef[] {
       designs: [plumbCell()],
       focusDesignId: 'tut-plumb',
       goals: [
-        { id: 'g1', kind: 'netEnergy', designId: 'tut-plumb', n: 45, label: 'Reach a net energy of +45 mC/tick in one cell', hint: 'Forge → Conduit tool → drag Pore → Combustor' },
-        { id: 'g2', kind: 'population', designId: 'tut-plumb', n: 30, label: 'Grow 30 cells' },
+        { id: 'g1', kind: 'conduits', designId: 'tut-plumb', n: 2, label: 'Lay two conduits and deploy the cell', hint: 'Forge → Conduit tool → drag each Pore → Combustor' },
+        { id: 'g2', kind: 'netEnergy', designId: 'tut-plumb', n: 55, label: 'Reach a net energy of +55 mC/tick in one cell', hint: 'Inspector → Energy budget shows each part’s share' },
       ],
     },
     {
