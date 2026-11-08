@@ -2,7 +2,7 @@
  * World: owns the environment, cells, bonds, strains and organisms, and
  * orchestrates one simulation tick.
  */
-import { NUM_RES, R_CHARGE, R_LITH, R_MURK, R_SORB } from './constants';
+import { NUM_RES, R_CHARGE, R_LITH, R_SORB } from './constants';
 import { Rng } from './rng';
 import { Environment } from './environment';
 import { makeLedger, note, type Ledger } from './ledger';
@@ -250,7 +250,7 @@ export class World {
         n++;
       }
     }
-    this.removeDead();
+    this.purgeDead();
     return n;
   }
 
@@ -261,11 +261,11 @@ export class World {
         kill(this, c, 'culled');
         n++;
       }
-    this.removeDead();
+    this.purgeDead();
     return n;
   }
 
-  private removeDead(): void {
+  purgeDead(): void {
     let any = false;
     for (const c of this.cells) if (!c.alive) any = true;
     if (!any) return;
@@ -392,7 +392,7 @@ export class World {
       const c = cells[i];
       if (c.alive) lifecycle(this, c);
     }
-    this.removeDead();
+    this.purgeDead();
     this.flushBirths();
     this.hash.rebuild(this.cells);
     physicsStep(this);
