@@ -1,0 +1,15 @@
+import { quietWorld, design, place } from '../src/tests/helpers';
+import { createBond } from '../src/sim/multicell';
+import { physicsStep } from '../src/sim/physics';
+const w = quietWorld();
+const d = design('sticky', (b) => { b.add('core', 0, 0, { autoDivide: 0 }); b.add('adhesion', 0); b.add('adhesion', 180); });
+const a = place(w, d, w.env.cx, w.env.cy);
+const b = place(w, d, w.env.cx + 40, w.env.cy);
+console.log('dist0', Math.hypot(a.x-b.x,a.y-b.y), a.alive, b.alive, w.cells.length);
+const bond = createBond(w, a, b)!;
+console.log('bonds', w.bonds.length, a.bonds.length, bond.strength);
+w.hash.rebuild(w.cells);
+physicsStep(w);
+console.log('after phys', Math.hypot(a.x-b.x,a.y-b.y), w.bonds.length, bond.broken, bond.stretch);
+w.step();
+console.log('after step', Math.hypot(a.x-b.x,a.y-b.y), w.bonds.length, bond.broken, a.bonds.length);
