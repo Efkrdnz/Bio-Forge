@@ -9,6 +9,7 @@ import type { ExperimentDef } from '../sim/experiment';
 import { allPresets } from '../sim/presets/experiments';
 import { templateDesigns } from '../sim/presets/designs';
 import { cloneDesign, normalizeDesign, type CellDesign } from '../sim/design';
+import { kvDel, kvGet, kvSet } from './idb';
 
 export const TICKS_PER_SECOND = 30;
 const LIB_KEY = 'bioforge.library.v1';
@@ -56,7 +57,7 @@ export class Engine {
   private acc = 0;
   timeline: TimelineEntry[] = [];
   snapshotEvery = 300;
-  maxSnapshots = 60;
+  maxSnapshots = 48;
   /** Effective simulated ticks per second (measured). */
   tps = 0;
   stepMs = 0;
@@ -159,7 +160,8 @@ export class Engine {
     const t = this.world.tick;
     // Keep timeline monotonic: drop entries "in the future" after a rewind
     this.timeline = this.timeline.filter((e) => e.tick < t || (e.tick === t && false));
-    this.timeline.push({ tick: t, snap: snapshot(this.world), label, bookmark });
+    // Timeline snapshots skip purely visual histories (≈60% smaller)
+    this.timeline.push({ tick: t, snap: snapshot(this.world, { cellHistory: false, popHistory: false }), label, bookmark });
     // Thin out non-bookmarked snapshots when over budget
     while (this.timeline.length > this.maxSnapshots) {
       const idx = this.timeline.findIndex((e, i) => i > 0 && !e.bookmark && i % 2 === 1);
@@ -169,6 +171,8 @@ export class Engine {
 
   rewindTo(entry: TimelineEntry) {
     const w = restore(entry.snap);
+    // Charts: keep the population history up to the restored moment
+    w.history = this.world.history.filter((h) => h.tick <= entry.tick);
     this.world = w;
     this.worldEpoch++;
     this.timeline = this.timeline.filter((e) => e.tick <= entry.tick);
@@ -258,10 +262,14 @@ export class Engine {
     }
   }
 
-  saveToSlot(name: string): { ok: boolean; message: string } {
-    const json = snapshotToJSON(snapshot(this.world));
+  async saveToSlot(name: string): Promise<{ ok: boolean; message: string }> {
+    const json = snapshotToJSON(snapshot(this.world, { cellHistory: false }));
     const id = `slot-${Date.now().toString(36)}`;
-    if (!safeSet(`bioforge.slot.${id}`, json)) return { ok: false, message: 'Browser storage is full or unavailable. Use Export instead.' };
+    try {
+      await kvSet(`bioforge.slot.${id}`, json);
+    } catch {
+      return { ok: false, message: 'Browser storage is full or unavailable. Use Export instead.' };
+    }
     const slots = this.slots();
     slots.unshift({ id, name, savedAt: Date.now(), tick: this.world.tick, cells: this.world.cells.length, size: json.length });
     safeSet(SLOT_KEY, JSON.stringify(slots));
@@ -269,24 +277,20 @@ export class Engine {
     return { ok: true, message: `Saved “${name}”` };
   }
 
-  loadSlot(id: string): { ok: boolean; message: string } {
-    const json = safeGet(`bioforge.slot.${id}`);
+  async loadSlot(id: string): Promise<{ ok: boolean; message: string }> {
+    const json = await kvGet(`bioforge.slot.${id}`);
     if (!json) return { ok: false, message: 'Save not found' };
     return this.importJSON(json);
   }
 
-  deleteSlot(id: string) {
-    try {
-      localStorage.removeItem(`bioforge.slot.${id}`);
-    } catch {
-      /* ignore */
-    }
+  async deleteSlot(id: string) {
+    await kvDel(`bioforge.slot.${id}`);
     safeSet(SLOT_KEY, JSON.stringify(this.slots().filter((s) => s.id !== id)));
     this.notify();
   }
 
   exportJSON(): string {
-    return snapshotToJSON(snapshot(this.world));
+    return snapshotToJSON(snapshot(this.world, { cellHistory: false }));
   }
 
   importJSON(json: string): { ok: boolean; message: string } {

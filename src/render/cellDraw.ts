@@ -862,8 +862,15 @@ export function drawSelection(ctx: CanvasRenderingContext2D, L: CellLook, o: Dra
   const t = o.t;
   ctx.save();
   ctx.translate(L.x, L.y);
-  ctx.strokeStyle = 'rgba(120,255,230,0.85)';
-  ctx.lineWidth = 1.4 / o.zoom;
+  // soft halo so the selection reads even in a crowd
+  ctx.globalCompositeOperation = 'lighter';
+  const hs = R * 3;
+  ctx.globalAlpha = 0.35 + 0.15 * Math.sin(t * 3);
+  ctx.drawImage(glowSprite('rgba(120,255,230,0.9)') as CanvasImageSource, -hs / 2, -hs / 2, hs, hs);
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.strokeStyle = 'rgba(160,255,240,0.95)';
+  ctx.lineWidth = 2.2 / o.zoom;
   ctx.setLineDash([6 / o.zoom, 5 / o.zoom]);
   ctx.rotate(t * 0.4);
   ctx.beginPath();

@@ -62,6 +62,13 @@ export function componentWorldPos(c: Cell, i: number): [number, number] {
   return [c.x + Math.cos(a) * r, c.y + Math.sin(a) * r];
 }
 
+/** Grid index at component i's position (allocation-free hot path). */
+function compGridIndex(w: World, c: Cell, i: number): number {
+  const a = c.angle + c.cd.ang[i];
+  const r = c.radius * c.cd.dist[i];
+  return w.env.index(c.x + Math.cos(a) * r, c.y + Math.sin(a) * r);
+}
+
 export function sense(w: World, c: Cell): void {
   const cd = c.cd;
   const env = w.env;
@@ -227,10 +234,9 @@ export function metabolize(w: World, c: Cell): void {
         break;
       }
       case T.photovore: {
-        const [px, py] = componentWorldPos(c, i);
         let eff2 = 1;
         if (heat > 0.65) eff2 = Math.max(0.15, 1 - (heat - 0.65) * 3);
-        let e = env.lightAt(px, py) * p0 * 0.055 * s * eff2;
+        let e = env.lightBase[compGridIndex(w, c, i)] * env.lightMul * p0 * 0.055 * s * eff2;
         e = Math.min(e, Math.max(0, caps[nb - NUM_RES + R_CHARGE] - buf[nb + R_CHARGE]));
         if (e > 0) {
           buf[nb + R_CHARGE] += e;
@@ -258,8 +264,7 @@ export function metabolize(w: World, c: Cell): void {
         break;
       }
       case T.pore: {
-        const [px, py] = componentWorldPos(c, i);
-        const gi = env.index(px, py);
+        const gi = compGridIndex(w, c, i);
         const wantS = p1 === 2 ? 0 : 1;
         const wantL = p1 === 1 ? 0 : 1;
         let ds = wantS * p0 * s * env.sorb[gi];
@@ -283,8 +288,7 @@ export function metabolize(w: World, c: Cell): void {
         break;
       }
       case T.efflux: {
-        const [px, py] = componentWorldPos(c, i);
-        const gi = env.index(px, py);
+        const gi = compGridIndex(w, c, i);
         let m = Math.min(p0 * s, buf[nb + R_MURK]);
         const cost = m * 0.1;
         if (cost > buf[nb + R_CHARGE]) m = buf[nb + R_CHARGE] / 0.1;
@@ -297,8 +301,8 @@ export function metabolize(w: World, c: Cell): void {
         break;
       }
       case T.emitter: {
-        const [px, py] = componentWorldPos(c, i);
-        const gi = env.index(px, py);
+        const gi = compGridIndex(w, c, i);
+        env.echoAge = 0;
         const amt = p1 * s * 0.4;
         if (amt > 0.001) {
           const cost = amt * 0.15;
@@ -390,14 +394,14 @@ export function metabolize(w: World, c: Cell): void {
   // ---------- Membrane passive exchange (cytosol <-> dish) ----------
   const perm = cd.membrane.perm;
   const area = Math.sqrt(c.mass / 10) * 3;
-  const fields = [env.sorb, env.lith, null, env.murk];
-  const refs = [w.params.maxSorb, w.params.maxLith, 1, MURK_REF];
-  for (const r of [R_SORB, R_LITH, R_MURK]) {
-    const f = fields[r]!;
+  for (let r = 0; r < NUM_RES; r++) {
+    if (r === R_CHARGE) continue;
+    const f = r === R_SORB ? env.sorb : r === R_LITH ? env.lith : env.murk;
+    const ref = r === R_SORB ? w.params.maxSorb : r === R_LITH ? w.params.maxLith : MURK_REF;
     const envAmt = f[ei];
     const cellAmt = buf[r];
     const cap = cyto[r];
-    let flow = perm[r] * area * (envAmt / refs[r] - cellAmt / cap);
+    let flow = perm[r] * area * (envAmt / ref - cellAmt / cap);
     if (flow > 0) flow = Math.min(flow, envAmt * 0.25, Math.max(0, cap * 1.2 - cellAmt));
     else flow = -Math.min(-flow, cellAmt);
     buf[r] += flow;

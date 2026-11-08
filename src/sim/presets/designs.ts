@@ -186,7 +186,7 @@ export const pulseSwimmer = (): CellDesign =>
       const out = b.node('signalOut', 220, 40, { ch: 0 });
       b.wire(so, out);
       const si = b.node('signalIn', 40, 160, { ch: 0 });
-      const th = b.node('threshold', 200, 160, { t: 0.3, h: 0.05 });
+      const th = b.node('threshold', 200, 160, { t: 0.55, h: 0.05 });
       b.wire(si, th);
       b.wire(th, b.actuator(fl, 380, 120));
       b.wire(th, b.actuator(fr, 380, 200));

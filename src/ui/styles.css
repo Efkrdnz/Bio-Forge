@@ -1248,9 +1248,9 @@ input[type='number'] {
   z-index: 30;
   background: radial-gradient(circle at center, rgba(2, 6, 10, 0.55), rgba(2, 6, 10, 0.88));
 }
-.welcome .panel {
+.welcome > .panel {
   padding: 26px 30px;
-  width: min(640px, 92vw);
+  width: min(680px, 92vw);
 }
 .welcome h1 {
   margin: 0 0 4px;

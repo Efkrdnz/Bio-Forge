@@ -166,8 +166,8 @@ export function LabView() {
           <input type="text" placeholder={`Dish @ t${engine.world.tick}`} value={slotName} onChange={(e) => setSlotName(e.target.value)} className="grow" />
           <button
             className="btn small primary"
-            onClick={() => {
-              const r = engine.saveToSlot(slotName || `${engine.world.experiment?.name ?? 'Dish'} @ t${engine.world.tick}`);
+            onClick={async () => {
+              const r = await engine.saveToSlot(slotName || `${engine.world.experiment?.name ?? 'Dish'} @ t${engine.world.tick}`);
               ui.toast(r.message, r.ok ? 'good' : 'warn');
               setSlotName('');
             }}
@@ -187,8 +187,8 @@ export function LabView() {
               <div className="row" style={{ marginTop: 6 }}>
                 <button
                   className="btn small"
-                  onClick={() => {
-                    const r = engine.loadSlot(s.id);
+                  onClick={async () => {
+                    const r = await engine.loadSlot(s.id);
                     ui.toast(r.message, r.ok ? 'good' : 'warn');
                     if (r.ok) ui.set({ view: 'dish', selectedId: null });
                   }}

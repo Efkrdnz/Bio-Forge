@@ -42,6 +42,8 @@ export class Environment {
   pairsV: Int32Array;
   lightSources: LightSource[] = [];
   lightMul = 1;
+  /** Ticks since any echo was emitted; echo work is skipped once it has faded. */
+  echoAge = 1e9;
   patternSeed: number;
   private lastPatterns = '';
   /** Version counter so renderers can cache field textures. */
@@ -347,11 +349,28 @@ export class Environment {
         this.sorb[i] += dec;
         drained += drn;
       }
-      // Heat relaxes toward the pattern target
-      this.heat[i] += (this.heatTarget[i] - this.heat[i]) * 0.004;
-      this.echoA[i] *= 0.965;
-      this.echoB[i] *= 0.965;
     }
+    // Heat relaxes toward the pattern target
+    const ht = this.heatTarget;
+    const he = this.heat;
+    for (let k = 0; k < ins.length; k++) {
+      const i = ins[k];
+      he[i] += (ht[i] - he[i]) * 0.004;
+    }
+    const echoLive = this.echoAge < 500;
+    if (echoLive) {
+      const ea = this.echoA;
+      const eb = this.echoB;
+      for (let k = 0; k < ins.length; k++) {
+        const i = ins[k];
+        ea[i] *= 0.965;
+        eb[i] *= 0.965;
+      }
+    } else if (this.echoAge === 500) {
+      this.echoA.fill(0);
+      this.echoB.fill(0);
+    }
+    this.echoAge++;
     ledger.matterIn += fed;
     ledger.matterOut += drained;
     note(ledger, 'feed', fed);
@@ -360,8 +379,10 @@ export class Environment {
     this.diffuse(this.lith, 0.035);
     this.diffuse(this.murk, 0.08);
     this.diffuse(this.heat, 0.12);
-    this.diffuse(this.echoA, 0.18);
-    this.diffuse(this.echoB, 0.18);
+    if (echoLive) {
+      this.diffuse(this.echoA, 0.18);
+      this.diffuse(this.echoB, 0.18);
+    }
   }
 
   /**

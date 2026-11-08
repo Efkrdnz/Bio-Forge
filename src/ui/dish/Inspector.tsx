@@ -1,3 +1,4 @@
+import { Fragment, useState } from 'react';
 import { engine } from '../engine';
 import { useEngineVersion, useUI, dishCamera } from '../store';
 import { COMPONENT_DEFS, COMPONENT_TYPES } from '../../sim/components';
@@ -234,6 +235,10 @@ export function Inspector() {
         </section>
       )}
 
+      <ResourceNetwork c={c} />
+
+      {org && <OrganismSection c={c} />}
+
       <section>
         <div className="section-title">Signal channels</div>
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${NUM_CHANNELS}, 1fr)`, gap: 6 }}>
@@ -251,17 +256,15 @@ export function Inspector() {
       <section>
         <div className="section-title">Membrane exchange</div>
         <div className="kv">
-          {(['Sorb', 'Lith', '', 'Murk'] as const).map((n, r) =>
-            n ? (
-              <span key={n + 'a'} style={{ display: 'contents' }}>
-                <span>{n}</span>
-                <span style={{ color: c.membraneFlow[r] >= 0 ? 'var(--good)' : 'var(--warn)' }}>
-                  {c.membraneFlow[r] >= 0 ? 'in ' : 'out '}
-                  {Math.abs(c.membraneFlow[r] * 1000).toFixed(1)} m/kt
-                </span>
+          {([['Sorb', 0], ['Lith', 1], ['Murk', 3]] as const).map(([n, r]) => (
+            <Fragment key={n}>
+              <span>{n}</span>
+              <span style={{ color: c.membraneFlow[r] >= 0 ? 'var(--good)' : 'var(--warn)' }}>
+                {c.membraneFlow[r] >= 0 ? 'in ' : 'out '}
+                {Math.abs(c.membraneFlow[r] * 1000).toFixed(1)} m/kt
               </span>
-            ) : null,
-          )}
+            </Fragment>
+          ))}
         </div>
       </section>
 
@@ -289,5 +292,101 @@ export function Inspector() {
         })}
       </section>
     </div>
+  );
+}
+
+const RES_ICON = ['◆', '▲', '⚡', '●'];
+const RES_COLS = [RES_COLOR.sorb, RES_COLOR.lith, RES_COLOR.charge, RES_COLOR.murk];
+
+/** Every internal link (cytosol links + conduits) with its live flow per resource. */
+function ResourceNetwork({ c }: { c: import('../../sim/cell').Cell }) {
+  const cd = c.cd;
+  const name = (node: number) => (node === 0 ? 'Cytosol' : `${COMPONENT_DEFS[COMPONENT_TYPES[cd.types[node - 1]]].glyph}#${cd.uids[node - 1]}`);
+  const rows: { a: string; b: string; conduit: boolean; f: number[]; mag: number }[] = [];
+  for (let e = 0; e < cd.numEdges; e++) {
+    const f = [0, 1, 2, 3].map((r) => c.edgeFlow[e * 4 + r]);
+    const mag = f.reduce((a, v) => a + Math.abs(v), 0);
+    rows.push({ a: name(cd.edgeA[e]), b: name(cd.edgeB[e]), conduit: cd.edgeConduit[e] === 1, f, mag });
+  }
+  rows.sort((x, y) => y.mag - x.mag);
+  const [open, setOpen] = useState(false);
+  const shown = open ? rows : rows.slice(0, 6);
+  return (
+    <section>
+      <div className="section-title">Resource network · {cd.numEdges} links</div>
+      <div className="tiny dim" style={{ marginBottom: 4 }}>Flow per link in milli-units per tick (direction: first → second). Conduits are marked ═.</div>
+      {shown.map((r, i) => (
+        <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr repeat(4, 42px)', gap: 4, fontSize: 10, alignItems: 'center', padding: '2px 0', borderTop: '1px solid var(--line)' }}>
+          <span className="mono" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {r.a} {r.conduit ? '═' : '─'}▸ {r.b}
+          </span>
+          {r.f.map((v, k) => (
+            <span key={k} className="mono" style={{ textAlign: 'right', color: Math.abs(v) < 1e-4 ? 'var(--dimmer)' : RES_COLS[k] }}>
+              {RES_ICON[k]}
+              {(v * 1000).toFixed(1)}
+            </span>
+          ))}
+        </div>
+      ))}
+      {rows.length > 6 && (
+        <button className="btn small" style={{ marginTop: 4 }} onClick={() => setOpen(!open)}>
+          {open ? 'Show fewer' : `Show all ${rows.length}`}
+        </button>
+      )}
+    </section>
+  );
+}
+
+function OrganismSection({ c }: { c: import('../../sim/cell').Cell }) {
+  const ui = useUI();
+  const w = engine.world;
+  const members = w.cells.filter((x) => x.organismId === c.organismId);
+  const bonds = w.bonds.filter((b) => b.a.organismId === c.organismId);
+  const tissues = [0, 0, 0, 0];
+  let mass = 0;
+  for (const m of members) {
+    tissues[m.tissue]++;
+    mass += m.mass;
+  }
+  const meanStretch = bonds.length ? bonds.reduce((a, b) => a + b.stretch, 0) / bonds.length : 0;
+  const maxStretch = bonds.reduce((a, b) => Math.max(a, b.stretch), 0);
+  const limit = bonds.length ? 0.35 + bonds[0].strength * 0.9 : 1;
+  const stability = Math.max(0, 1 - maxStretch / limit);
+  const names = c.cd.design.development.tissueNames;
+  return (
+    <section>
+      <div className="section-title">Organism #{c.organismId}</div>
+      <div className="kv">
+        <span>Cells / bonds</span>
+        <span>
+          {members.length} / {bonds.length}
+        </span>
+        <span>Total biomass</span>
+        <span>{mass.toFixed(1)}</span>
+        <span>Mean bond stretch</span>
+        <span>{(meanStretch * 100).toFixed(1)}%</span>
+      </div>
+      <Bar label="Stability" frac={stability} color={stability > 0.5 ? '#7dffa0' : '#ffb347'} text={`${(stability * 100).toFixed(0)}%`} />
+      <div className="row" style={{ flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+        {tissues.map((n, t) =>
+          n ? (
+            <span key={t} className="chip" style={{ borderColor: TISSUE_COLORS[t], color: TISSUE_COLORS[t] }}>
+              {names[t]} × {n}
+            </span>
+          ) : null,
+        )}
+      </div>
+      <div className="row" style={{ marginTop: 6 }}>
+        <button
+          className="btn small danger"
+          onClick={() => {
+            w.cullWhere((x) => x.organismId === c.organismId);
+            ui.set({ selectedId: null });
+          }}
+        >
+          Cull organism
+        </button>
+      </div>
+    </section>
   );
 }

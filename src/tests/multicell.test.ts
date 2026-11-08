@@ -3,6 +3,8 @@ import { R_CHARGE, NUM_RES } from '../sim/constants';
 import { createBond, recomputeOrganisms } from '../sim/multicell';
 import { restLength } from '../sim/bond';
 import { design, place, quietWorld, run } from './helpers';
+import { pulseSwimmer } from '../sim/presets/designs';
+import { T } from '../sim/components';
 
 const sticky = (extra: Parameters<typeof design>[1] = () => {}) =>
   design('sticky', (b) => {
@@ -183,5 +185,41 @@ describe('signalling', () => {
     expect(w.env.sample(w.env.echoA, e.x + e.radius, e.y)).toBeGreaterThan(0.1);
     expect(r.sensors[0]).toBeGreaterThan(0.05);
     expect(w.env.sample(w.env.echoB, e.x, e.y)).toBe(0);
+  });
+});
+
+describe('coordinated movement', () => {
+  const chain = (withPacemaker: boolean) => {
+    const w = quietWorld();
+    const d = pulseSwimmer();
+    const cells = [0, 1, 2, 3, 4].map((k) => place(w, d, w.env.cx - k * 22, w.env.cy, 0));
+    cells.forEach((c, k) => {
+      c.tissue = k === 0 && withPacemaker ? 0 : 1;
+      for (let j = 2; j < c.buf.length; j += NUM_RES) c.buf[j] = 3;
+    });
+    for (let k = 0; k < 4; k++) createBond(w, cells[k], cells[k + 1], Math.PI, 0);
+    const cx0 = cells.reduce((a, c) => a + c.x, 0) / 5;
+    const cy0 = cells.reduce((a, c) => a + c.y, 0) / 5;
+    let pulses = 0;
+    let prev = 0;
+    for (let t = 0; t < 300; t++) {
+      w.step();
+      const on = cells[4].activation[cells[4].cd.byType[T.flagellum][0]] > 0.5 ? 1 : 0; // body flagellum
+      if (on && !prev) pulses++;
+      prev = on;
+    }
+    const cx1 = cells.reduce((a, c) => a + c.x, 0) / 5;
+    const cy1 = cells.reduce((a, c) => a + c.y, 0) / 5;
+    return { moved: Math.hypot(cx1 - cx0, cy1 - cy0), pulses, bonds: w.bonds.length };
+  };
+
+  it('a pacemaker wave makes the whole organism swim; without it the body stays still', () => {
+    const live = chain(true);
+    const dead = chain(false);
+    expect(live.bonds).toBe(4);
+    expect(live.pulses).toBeGreaterThanOrEqual(3); // tail flagellum beats in bursts
+    expect(live.moved).toBeGreaterThan(15);
+    expect(dead.pulses).toBe(0);
+    expect(dead.moved).toBeLessThan(live.moved * 0.3);
   });
 });

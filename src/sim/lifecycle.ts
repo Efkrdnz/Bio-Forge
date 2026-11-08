@@ -109,6 +109,8 @@ export function divide(w: World, parent: Cell): Cell {
   if (!bonded) {
     d.vx = ux * 1.2;
     d.vy = uy * 1.2;
+    // A bud that founds a new organism restarts development (germline reset).
+    if (dev.mode === 'bonded') d.tissue = d.cd.design.development.startTissue;
   }
   w.pendingBirths.push(d);
   w.pushFx('birth', dx, dy, strain.hue);

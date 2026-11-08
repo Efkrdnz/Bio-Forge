@@ -32,6 +32,7 @@ export interface WorldSnapshot {
     echoA: Float32Array;
     echoB: Float32Array;
     lightSources: World['env']['lightSources'];
+    echoAge?: number;
   };
   ledger: World['ledger'];
   strains: Omit<Strain, 'compiled'>[];
@@ -61,11 +62,28 @@ const CELL_SCALARS = [
 ] as const;
 const CELL_ARRAYS = ['buf', 'cytoCap', 'activation', 'activity', 'sensors', 'sensorMem', 'channels', 'eGen', 'eUse', 'edgeFlow', 'membraneFlow', 'hist'] as const;
 
-export function snapshot(w: World): WorldSnapshot {
+export interface SnapshotOptions {
+  /** Include each cell's activity-graph ring buffer (visual only). Default true. */
+  cellHistory?: boolean;
+  /** Include the dish population history samples (charts only). Default true. */
+  popHistory?: boolean;
+}
+
+/**
+ * Capture the full simulation state. The optional visual histories do not
+ * affect the simulation, so leaving them out keeps snapshots small while
+ * replays stay exact.
+ */
+export function snapshot(w: World, opts: SnapshotOptions = {}): WorldSnapshot {
+  const withHist = opts.cellHistory !== false;
   const cells = w.cells.map((c) => {
     const o: Record<string, unknown> = { strainId: c.strain.id, damage: { ...c.damage } };
     for (const k of CELL_SCALARS) o[k] = c[k];
-    for (const k of CELL_ARRAYS) o[k] = (c[k] as TA).slice();
+    for (const k of CELL_ARRAYS) if (k !== 'hist' || withHist) o[k] = (c[k] as TA).slice();
+    if (!withHist) {
+      o.histPos = 0;
+      o.histCount = 0;
+    }
     o.circuit = {
       values: c.circuit.values.slice(),
       mem: c.circuit.mem.slice(),
@@ -109,6 +127,7 @@ export function snapshot(w: World): WorldSnapshot {
       echoA: w.env.echoA.slice(),
       echoB: w.env.echoB.slice(),
       lightSources: w.env.lightSources.map((s) => ({ ...s })),
+      echoAge: w.env.echoAge,
     },
     ledger: clone(w.ledger),
     strains,
@@ -120,7 +139,7 @@ export function snapshot(w: World): WorldSnapshot {
     experiment: w.experiment ? clone(w.experiment) : null,
     goalStatus: clone(w.goalStatus),
     scheduleIndex: w.scheduleIndex,
-    history: clone(w.history),
+    history: opts.popHistory === false ? [] : clone(w.history),
     historyEvery: w.historyEvery,
     deaths: { ...w.deaths },
     births: w.births,
@@ -143,6 +162,7 @@ export function restore(s: WorldSnapshot): World {
   e.echoA.set(s.env.echoA);
   e.echoB.set(s.env.echoB);
   e.lightSources = s.env.lightSources.map((x) => ({ ...x }));
+  e.echoAge = s.env.echoAge ?? 0;
   e.updatePatterns(w.params, true);
   w.ledger = clone(s.ledger);
   w.strains.clear();

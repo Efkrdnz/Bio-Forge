@@ -162,8 +162,26 @@ function assert(cond, msg) {
     void wires0;
     await page.click('.node-palette >> text=Clock');
     await page.waitForTimeout(200);
-    await shot('05-circuit');
     assert(await page.isVisible('.node-props'), 'new circuit node created and selected');
+    await page.click('.node-palette >> text=NOT');
+    await page.waitForTimeout(200);
+    const ids = await world(() => window.__bioforgeUI().forgeDesign.circuit.nodes.slice(-2).map((n) => n.id));
+    const wiresBefore = await world(() => window.__bioforgeUI().forgeDesign.circuit.wires.length);
+    // move the NOT node away so the ports do not overlap, then drag a wire
+    const notBox = await page.locator(`[data-node="${ids[1]}"]`).boundingBox();
+    await page.mouse.move(notBox.x + 60, notBox.y + 10);
+    await page.mouse.down();
+    await page.mouse.move(notBox.x + 260, notBox.y + 140, { steps: 8 });
+    await page.mouse.up();
+    const out = await page.locator(`[data-node="${ids[0]}"] [title^="output"]`).boundingBox();
+    const inp = await page.locator(`[data-node="${ids[1]}"] [title^="input"]`).first().boundingBox();
+    await page.mouse.move(out.x + out.width / 2, out.y + out.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(inp.x + inp.width / 2, inp.y + inp.height / 2, { steps: 12 });
+    await page.mouse.up();
+    const wiresAfter = await world(() => window.__bioforgeUI().forgeDesign.circuit.wires.length);
+    await shot('05-circuit');
+    assert(wiresAfter === wiresBefore + 1, 'wire dragged from Clock output to NOT input');
 
     console.log('11. Development tab & lineage view');
     await page.click('[data-testid=forge-tab-development]');
