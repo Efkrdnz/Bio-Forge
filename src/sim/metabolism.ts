@@ -228,9 +228,17 @@ export function metabolize(w: World, c: Cell): void {
     const actv = cd.actuated[i] ? c.activation[i] : 1;
     const u = cd.upkeep[i] * rateMul * (cd.actuated[i] ? 0.25 + 0.75 * actv : 1);
     const avail = buf[nb + R_CHARGE];
-    const eff = u > 0 ? Math.min(1, avail / u) : 1;
+    let eff = u > 0 ? Math.min(1, avail / u) : 1;
     buf[nb + R_CHARGE] = avail - eff * u;
     use += eff * u;
+    // Energy acquirers (combustors, photovores, spikes) are self-priming: an
+    // unpaid upkeep becomes a debt settled from their own intake, so a
+    // drained cell can restart instead of locking up.
+    let debt = 0;
+    if (eff < 1 && (t === T.combustor || t === T.photovore || t === T.spike)) {
+      debt = (1 - eff) * u;
+      eff = 1;
+    }
     const s = actv * eff;
     const p0 = prm[i * MAX_PARAMS];
     const p1 = prm[i * MAX_PARAMS + 1];
@@ -238,7 +246,11 @@ export function metabolize(w: World, c: Cell): void {
     switch (t) {
       case T.assembler: {
         if (c.mass >= cd.maxMass) break;
-        let g = p0 * s * rateMul;
+        // Growth checkpoint: build only while charge is healthy, so a cell never
+        // turns its last fuel into biomass (0 below 15% charge, full above 50%).
+        const chargeFrac = buf[nb + R_CHARGE] / Math.max(1e-6, caps[nb - NUM_RES + R_CHARGE]);
+        const gate = Math.max(0, Math.min(1, (chargeFrac - 0.15) / 0.35));
+        let g = p0 * s * rateMul * gate;
         const needS = 1 - MASS_LITH_FRACTION;
         const needL = MASS_LITH_FRACTION;
         g = Math.min(g, buf[nb + R_SORB] / needS, buf[nb + R_LITH] / needL, buf[nb + R_CHARGE] / 2.5, cd.maxMass - c.mass);
@@ -295,6 +307,19 @@ export function metabolize(w: World, c: Cell): void {
       }
       case T.pore: {
         const gi = compGridIndex(w, c, i);
+        if (p1 === 3) {
+          // Murk-only mode: a scavenger pore that pumps waste in (for reclaimers)
+          let dm = Math.max(0, Math.min(p0 * s * env.murk[gi], caps[nb - NUM_RES + R_MURK] * 1.5 - buf[nb + R_MURK]));
+          const cm = dm * 0.12;
+          if (cm > buf[nb + R_CHARGE]) dm = buf[nb + R_CHARGE] / 0.12;
+          if (dm > 0) {
+            buf[nb + R_CHARGE] -= dm * 0.12;
+            use += dm * 0.12;
+            env.murk[gi] -= dm;
+            buf[nb + R_MURK] += dm;
+          }
+          break;
+        }
         const wantS = p1 === 2 ? 0 : 1;
         const wantL = p1 === 1 ? 0 : 1;
         let ds = wantS * p0 * s * env.sorb[gi];
@@ -389,6 +414,11 @@ export function metabolize(w: World, c: Cell): void {
       }
       default:
         break;
+    }
+    if (debt > 0) {
+      const pay = Math.min(debt, buf[nb + R_CHARGE]);
+      buf[nb + R_CHARGE] -= pay;
+      use += pay;
     }
     c.activity[i] += (s - c.activity[i]) * 0.3;
     energyIn += gen;

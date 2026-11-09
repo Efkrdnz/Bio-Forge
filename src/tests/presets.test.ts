@@ -103,6 +103,8 @@ describe('presets', () => {
     expect(t.length).toBeGreaterThanOrEqual(6);
     for (const x of t) {
       expect(x.goals.length).toBeGreaterThan(0);
+      // Lessons 1–5 are controlled (no mutation); lesson 6 is about evolution
+      if (x.id !== 'tut-6') expect(x.params.mutationRate).toBe(0);
       for (const g of x.goals) expect(g.label.length).toBeLessThan(70); // short, not walls of text
     }
   });

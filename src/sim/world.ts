@@ -81,6 +81,8 @@ export class World {
   historyEvery = 30;
   deaths: Partial<Record<DeathCause, number>> = {};
   births = 0;
+  /** Predation kills that fed the predator. */
+  feasts = 0;
   tickEnergyIn = 0;
   tickEnergyOut = 0;
   energyRateIn = 0;
@@ -223,7 +225,8 @@ export class World {
     return out;
   }
 
-  private flushBirths(): void {
+  /** Move freshly spawned cells into the world (and form pending bonds). */
+  flushBirths(): void {
     if (!this.pendingBirths.length) return;
     for (const c of this.pendingBirths) {
       this.cells.push(c);

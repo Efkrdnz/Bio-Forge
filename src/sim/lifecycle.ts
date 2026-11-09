@@ -143,14 +143,32 @@ export function kill(w: World, c: Cell, cause?: DeathCause): void {
   c.alive = false;
   if (cause) c.deathCause = cause;
   c.deathCause = deathCause(c);
-  const sorb = c.total(R_SORB) + c.mass * (1 - MASS_LITH_FRACTION);
-  const lith = c.total(R_LITH) + c.mass * MASS_LITH_FRACTION;
+  let sorb = c.total(R_SORB) + c.mass * (1 - MASS_LITH_FRACTION);
+  let lith = c.total(R_LITH) + c.mass * MASS_LITH_FRACTION;
   const murk = c.total(R_MURK);
+  let fedCharge = 0;
+  // Feast: a predator that lands the killing blow digests most of the prey
+  // (sorb and lith go straight into its cytosol; matter is conserved).
+  if (c.deathCause === 'predation' && c.lastAttacker) {
+    const k = w.cellById(c.lastAttacker);
+    if (k && k.alive) {
+      const gs = sorb * 0.85;
+      const gl = lith * 0.85;
+      k.buf[R_SORB] += gs;
+      k.buf[R_LITH] += gl;
+      fedCharge = c.total(R_CHARGE) * 0.5;
+      k.buf[R_CHARGE] += fedCharge;
+      sorb -= gs;
+      lith -= gl;
+      k.flash = 1;
+      w.feasts++;
+    }
+  }
   const r = Math.max(12, c.radius * 1.4);
   w.env.deposit('sorb', c.x, c.y, sorb, r);
   w.env.deposit('lith', c.x, c.y, lith, r);
   w.env.deposit('murk', c.x, c.y, murk, r);
-  const charge = c.total(R_CHARGE);
+  const charge = c.total(R_CHARGE) - fedCharge; // the rest is lost with the corpse
   w.ledger.energyOut += charge;
   note(w.ledger, 'deathCharge', charge);
   c.buf.fill(0);

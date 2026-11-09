@@ -74,27 +74,29 @@ export const chemoGlider = (): CellDesign =>
   });
 
 export const lysinHunter = (): CellDesign =>
-  buildDesign('lysin-hunter', 'Lysin Hunter', 352, { membrane: 'lattice', notes: 'Predator. Proximity sensors steer it toward foreign cells; spikes drain them.' }, (b) => {
-    b.add('core', 0, 0, { divideAt: 2.6 });
-    b.add('assembler', 180, 0.35, { rate: 0.07 });
-    const cb = b.add('combustor', 0, 0.3, { rate: 0.12 });
-    b.add('vesicle', 90, 0.45);
+  buildDesign('lysin-hunter', 'Lysin Hunter', 352, { membrane: 'lattice', notes: 'Predator. Proximity sensors steer it toward foreign cells; spikes drain them, and each kill is digested.' }, (b) => {
+    b.add('core', 0, 0, { divideAt: 2.2, lifespan: 5000 });
+    const asm = b.add('assembler', 180, 0.35, { rate: 0.08 });
+    const cb = b.add('combustor', 0, 0.3, { rate: 0.22 });
+    b.add('vesicle', 90, 0.45, { size: 1.5 });
     b.add('pore', 100, 1, { rate: 0.01 });
     b.conduit(cb, b.add('efflux', -100));
-    const s1 = b.add('spike', 15, 1, { power: 1.3 });
-    const s2 = b.add('spike', -15, 1, { power: 1.3 });
-    const xl = b.add('proximity', 40, 1, { range: 6 });
-    const xr = b.add('proximity', -40, 1, { range: 6 });
-    const fl = b.add('flagellum', 160, 1, { power: 1.3 });
-    const fr = b.add('flagellum', -160, 1, { power: 1.3 });
+    const s1 = b.add('spike', 15, 1, { power: 1.4 });
+    const s2 = b.add('spike', -15, 1, { power: 1.4 });
+    const xl = b.add('proximity', 40, 1, { range: 7 });
+    const xr = b.add('proximity', -40, 1, { range: 7 });
+    const fl = b.add('flagellum', 160, 1, { power: 1.0 });
+    const fr = b.add('flagellum', -160, 1, { power: 1.0 });
     b.conduit(s1, cb);
     b.conduit(s2, cb);
+    b.conduit(s1, asm);
+    b.conduit(s2, asm);
     const nl = b.sensor(xl, 'foreign', 40, 40);
     const nr = b.sensor(xr, 'foreign', 40, 160);
     const osc = b.node('osc', 40, 280, { period: 90, duty: 0.5 });
     const mixL = b.node('add', 210, 40);
     const mixR = b.node('add', 210, 160);
-    const half = b.node('gain', 120, 280, { k: 0.45, bias: 0.15 });
+    const half = b.node('gain', 120, 280, { k: 0.3, bias: 0.05 });
     b.wire(osc, half);
     b.wire(nl, mixR, 0);
     b.wire(half, mixR, 1);
@@ -142,10 +144,11 @@ export const lumenMat = (): CellDesign =>
       b.add('photovore', 60, 0.5, { area: 1.6 }, TISSUE_A);
       b.add('photovore', -60, 0.5, { area: 1.6 }, TISSUE_A);
       b.add('capacitor', 0, 0.45, { size: 1.2 }, TISSUE_A);
-      const cb = b.add('combustor', 60, 0.45, { rate: 0.1 }, TISSUE_B);
+      b.add('pore', 180, 1, { select: 2, rate: 0.03 }, TISSUE_A);
+      const cb = b.add('combustor', 60, 0.45, { rate: 0.1 });
       const p1 = b.add('pore', 30, 1, { rate: 0.03 }, TISSUE_B);
       const p2 = b.add('pore', -30, 1, { rate: 0.03 }, TISSUE_B);
-      b.conduit(cb, b.add('efflux', 150, 1, {}, TISSUE_B));
+      b.conduit(cb, b.add('efflux', 150, 1, {}));
       b.add('adhesion', 0);
       b.add('adhesion', 120);
       b.add('adhesion', 240);
@@ -194,15 +197,38 @@ export const pulseSwimmer = (): CellDesign =>
   );
 
 export const murkEater = (): CellDesign =>
-  buildDesign('murk-eater', 'Murk Eater', 292, { notes: 'Uses light to refine dish murk into building sorb. Thrives where others pollute.' }, (b) => {
-    b.add('core', 0, 0);
-    b.add('assembler', 180, 0.35);
-    b.add('photovore', 0, 0.5, { area: 1.8 });
-    const r1 = b.add('reclaimer', 90, 0.45, { rate: 0.06 });
-    b.add('vacuole', -90, 0.45, { size: 1.4 });
-    b.add('pore', 120, 1, { select: 2, rate: 0.02 });
-    b.add('capacitor', 135, 0.5);
-    void r1;
+  buildDesign('murk-eater', 'Murk Eater', 292, { membrane: 'lattice', notes: 'Scavenger: pumps murk in, and spends light energy refining it into building sorb. Thrives where others pollute.' }, (b) => {
+    b.add('core', 0, 0, { divideAt: 2.05 });
+    const asm = b.add('assembler', 180, 0.35);
+    b.add('photovore', 45, 0.5, { area: 2.3 });
+    b.add('photovore', -45, 0.5, { area: 2.3 });
+    const r1 = b.add('reclaimer', 120, 0.45, { rate: 0.08 });
+    b.add('vacuole', -120, 0.45, { size: 0.8 });
+    const m1 = b.add('pore', 150, 1, { select: 3, rate: 0.03 });
+    const m2 = b.add('pore', -150, 1, { select: 3, rate: 0.03 });
+    b.add('pore', 90, 1, { select: 2, rate: 0.02 });
+    b.conduit(m1, r1);
+    b.conduit(m2, r1);
+    b.conduit(r1, asm);
+    // Homeostasis: stop pumping murk in once the cell is 35% full of it
+    const hs = b.add('homeostat', 90, 0.4);
+    const inMurk = b.sensor(hs, 'murk', 40, 60);
+    const full = b.node('threshold', 200, 60, { t: 0.35, h: 0.08 });
+    const open = b.node('not', 340, 60);
+    b.wire(inMurk, full);
+    b.wire(full, open);
+    b.wire(open, b.actuator(m1, 480, 30));
+    b.wire(open, b.actuator(m2, 480, 110));
+    // Refine only while short of building sorb (or when murk gets dangerous)
+    const inSorb = b.sensor(hs, 'sorb', 40, 200);
+    const fed = b.node('threshold', 200, 200, { t: 0.5, h: 0.05 });
+    const hungry = b.node('not', 340, 200);
+    const refine = b.node('or', 340, 280);
+    b.wire(inSorb, fed);
+    b.wire(fed, hungry);
+    b.wire(hungry, refine, 0);
+    b.wire(full, refine, 1);
+    b.wire(refine, b.actuator(r1, 480, 240));
   });
 
 export const sentinel = (): CellDesign =>

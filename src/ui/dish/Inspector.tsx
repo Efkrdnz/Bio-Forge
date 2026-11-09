@@ -102,6 +102,21 @@ export function Inspector() {
             Lineage
           </button>
           <button
+            className="btn small"
+            title="Artificial selection: seed 5 copies of this exact strain (mutations included) next to it"
+            onClick={() => {
+              let n = 0;
+              for (let k = 0; k < 5; k++) {
+                const a = (k / 5) * Math.PI * 2;
+                if (w.spawn(c.strain, c.x + Math.cos(a) * c.radius * 3, c.y + Math.sin(a) * c.radius * 3)) n++;
+              }
+              w.flushBirths();
+              ui.toast(n ? `Propagated ${n} × ${c.strain.name}` : 'Population cap reached', n ? 'good' : 'warn');
+            }}
+          >
+            Propagate ×5
+          </button>
+          <button
             className="btn small danger"
             onClick={() => {
               kill(w, c, 'culled');

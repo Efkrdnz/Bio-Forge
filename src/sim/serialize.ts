@@ -48,6 +48,7 @@ export interface WorldSnapshot {
   historyEvery: number;
   deaths: World['deaths'];
   births: number;
+  feasts?: number;
   energyRateIn: number;
   energyRateOut: number;
   log: World['log'];
@@ -58,7 +59,7 @@ const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 const CELL_SCALARS = [
   'id', 'x', 'y', 'vx', 'vy', 'angle', 'av', 'mass', 'radius', 'integrity', 'maxIntegrity', 'age', 'tissue',
   'generation', 'divisions', 'lastDivision', 'birthTick', 'parentId', 'organismId', 'growth', 'heatStress',
-  'toxicity', 'histPos', 'histCount', 'flash', 'phase', 'wantsAdhere', 'deathCause',
+  'toxicity', 'histPos', 'histCount', 'flash', 'phase', 'wantsAdhere', 'deathCause', 'lastAttacker',
 ] as const;
 const CELL_ARRAYS = ['buf', 'cytoCap', 'activation', 'activity', 'sensors', 'sensorMem', 'channels', 'eGen', 'eUse', 'edgeFlow', 'membraneFlow', 'hist'] as const;
 
@@ -143,6 +144,7 @@ export function snapshot(w: World, opts: SnapshotOptions = {}): WorldSnapshot {
     historyEvery: w.historyEvery,
     deaths: { ...w.deaths },
     births: w.births,
+    feasts: w.feasts,
     energyRateIn: w.energyRateIn,
     energyRateOut: w.energyRateOut,
     log: clone(w.log.slice(-200)),
@@ -232,6 +234,7 @@ export function restore(s: WorldSnapshot): World {
   w.historyEvery = s.historyEvery;
   w.deaths = { ...s.deaths };
   w.births = s.births;
+  w.feasts = s.feasts ?? 0;
   w.energyRateIn = s.energyRateIn;
   w.energyRateOut = s.energyRateOut;
   w.log = clone(s.log);

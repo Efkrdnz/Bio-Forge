@@ -192,28 +192,40 @@ function PopulationPanel() {
         </div>
       </section>
       <section>
-        <div className="section-title">Dish resources</div>
-        <LineChart
-          version={v}
-          height={70}
-          min={0}
-          series={[
-            { values: hist.map((h) => h.sorb), color: '#3ef0c6' },
-            { values: hist.map((h) => h.lith), color: '#ffc65c' },
-            { values: hist.map((h) => h.murk), color: '#d05cff' },
-          ]}
-        />
-        <div className="row tiny dim" style={{ gap: 10 }}>
-          <span>
-            <span className="swatch" style={{ background: '#3ef0c6' }} /> sorb
-          </span>
-          <span>
-            <span className="swatch" style={{ background: '#ffc65c' }} /> lith
-          </span>
-          <span>
-            <span className="swatch" style={{ background: '#d05cff' }} /> murk
-          </span>
-        </div>
+        <div className="section-title">Dish resources · % of saturation</div>
+        {(() => {
+          const n = w.env.inside.length;
+          const capS = w.params.maxSorb * n;
+          const capL = w.params.maxLith * n;
+          const capM = 6 * n;
+          const last = hist[hist.length - 1];
+          const pct = (v: number, c: number) => `${((v / c) * 100).toFixed(1)}%`;
+          return (
+            <>
+              <LineChart
+                version={v}
+                height={70}
+                min={0}
+                series={[
+                  { values: hist.map((h) => h.sorb / capS), color: '#3ef0c6' },
+                  { values: hist.map((h) => h.lith / capL), color: '#ffc65c' },
+                  { values: hist.map((h) => h.murk / capM), color: '#d05cff' },
+                ]}
+              />
+              <div className="row tiny dim" style={{ gap: 10 }}>
+                <span>
+                  <span className="swatch" style={{ background: '#3ef0c6' }} /> sorb {last ? pct(last.sorb, capS) : ''}
+                </span>
+                <span>
+                  <span className="swatch" style={{ background: '#ffc65c' }} /> lith {last ? pct(last.lith, capL) : ''}
+                </span>
+                <span>
+                  <span className="swatch" style={{ background: '#d05cff' }} /> murk {last ? pct(last.murk, capM) : ''}
+                </span>
+              </div>
+            </>
+          );
+        })()}
       </section>
       <section>
         <div className="section-title">Charge flux (per tick)</div>

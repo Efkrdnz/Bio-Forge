@@ -135,7 +135,7 @@ or cull it. A stacked abundance chart tracks the dominant strains.
   * A timed schedule: set a parameter, pulse a field, or inoculate
   * Goals: population, survival, organism size, tissues, diversity,
     mutation depth, extinction, component present, conduits, zone
-    occupancy, net energy
+    occupancy, net energy, evolved heat tolerance
 * Save your own experiments, export/import them, and run them.
 * **Save slots** for whole worlds (in browser storage) plus world export/import
   as JSON. Saves are deterministic: a reloaded world continues exactly as the

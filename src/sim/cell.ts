@@ -91,6 +91,8 @@ export class Cell {
   flash = 0;
   /** Visual-only random phase. */
   phase: number;
+  /** Id of the last cell that damaged this one with a spike (for feasting). */
+  lastAttacker = 0;
   /** Pending adhesion request from the circuit. */
   wantsAdhere = false;
 

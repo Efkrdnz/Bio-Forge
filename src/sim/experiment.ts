@@ -33,7 +33,8 @@ export type GoalKind =
   | 'depth'
   | 'region'
   | 'netEnergy'
-  | 'conduits';
+  | 'conduits'
+  | 'heatTolerance';
 
 export interface Goal {
   id: string;
@@ -133,6 +134,21 @@ export function evaluateGoal(w: World, g: Goal, prev?: GoalStatus): GoalStatus {
       }
       progress = best / (g.n ?? 1);
       text = `${best} / ${g.n ?? 1} in a living design`;
+      break;
+    }
+    case 'heatTolerance': {
+      // Mean heat tolerance of the lineage's living cells (target n is in hundredths)
+      let sum = 0;
+      let k = 0;
+      for (const c of w.cells) {
+        if (g.designId && c.strain.rootId !== g.designId) continue;
+        sum += c.cd.membrane.heatTolerance;
+        k++;
+      }
+      const mean = k ? sum / k : 0;
+      const target = (g.n ?? 15) / 100;
+      progress = k ? mean / target : 0;
+      text = k ? `mean ±${mean.toFixed(3)} / ±${target.toFixed(2)}` : 'extinct';
       break;
     }
     case 'conduits': {

@@ -65,6 +65,15 @@ component (Inspector → Energy budget) and dish-wide (Population → Charge flu
 * Every part has a fixed **upkeep** in charge per tick. Parts with an
   activation input pay `25% + 75% × activation` of it. A part that cannot pay
   works at a reduced fraction (its efficiency).
+* **Self-priming acquirers.** Combustors, Photovore Plates and Lysin Spikes
+  keep working when they cannot pay upkeep. The unpaid upkeep becomes a debt
+  settled from what they take in. Without this rule, a cell that ran out of
+  charge could never restart, even with food inside it.
+* **Growth checkpoint.** The Assembler builds biomass in proportion to its
+  local charge level: nothing below 15%, full speed above 50%. A cell never
+  turns its last fuel into body mass.
+* **Intake pores** can be set to absorb sorb and lith, either one alone, or
+  (scavenger mode) only murk.
 
 ## 4. The internal resource network
 
@@ -107,7 +116,9 @@ component (Inspector → Energy budget) and dish-wide (Population → Charge flu
   accelerating rate. This guarantees turnover.
 * **Predation**: Lysin Spikes damage foreign cells they touch within their
   sector and siphon cytosol into the spike's buffer. Armor facing the spike
-  cuts damage to 25%.
+  cuts damage to 25%. When a spike lands the killing blow, the predator
+  **digests** 85% of the prey's sorb and lith (including its biomass) and
+  half of its charge. Everything else returns to the dish.
 * A cell dies when its integrity reaches 0 or its mass falls below its minimum.
   **All of its matter returns to the dish** around it: biomass splits back
   into sorb and lith at the fixed 2:1 ratio. Its remaining charge is lost.

@@ -52,7 +52,7 @@ const sameMat = (): CellDesign => {
   const d = lumenMat();
   d.id = 'tut-tissue';
   d.name = 'Uniform Mat';
-  d.notes = 'Every cell becomes a Leaf, so nobody feeds. Make daughters alternate tissues.';
+  d.notes = 'Every cell becomes a Leaf: no Root cells pump in food, so the sheet starves. Make daughters alternate tissues.';
   d.development.daughterTissue = 'inherit';
   return d;
 };
@@ -75,7 +75,7 @@ export function tutorials(): ExperimentDef[] {
       summary: 'A cell without an energy organelle starves. Fix its blueprint.',
       category: 'tutorial',
       seed: 11,
-      params: { feedPattern: 'uniform' },
+      params: { feedPattern: 'uniform', mutationRate: 0 },
       inoculations: [{ designId: 'tut-spark', count: 6, angle: 0, dist: 0, spread: 0.3 }],
       schedule: [],
       designs: [sparkCell()],
@@ -91,7 +91,7 @@ export function tutorials(): ExperimentDef[] {
       summary: 'Resources crawl through cytosol. Conduits make express routes.',
       category: 'tutorial',
       seed: 12,
-      params: {},
+      params: { mutationRate: 0 },
       inoculations: [{ designId: 'tut-plumb', count: 6, angle: 0, dist: 0, spread: 0.3 }],
       schedule: [],
       designs: [plumbCell()],
@@ -107,7 +107,7 @@ export function tutorials(): ExperimentDef[] {
       summary: 'Food lies to the east. Wire sensors to flagella so cells steer.',
       category: 'tutorial',
       seed: 13,
-      params: { feedPattern: 'gradient', feedRate: 0.003 },
+      params: { feedPattern: 'gradient', feedRate: 0.003, mutationRate: 0 },
       inoculations: [{ designId: 'tut-gradient', count: 8, angle: 180, dist: 0.65, spread: 0.12 }],
       schedule: [],
       designs: [blindGlider()],
@@ -122,7 +122,7 @@ export function tutorials(): ExperimentDef[] {
       summary: 'Bond daughters together to build a multicellular filament.',
       category: 'tutorial',
       seed: 14,
-      params: {},
+      params: { mutationRate: 0 },
       inoculations: [{ designId: 'tut-bond', count: 5, angle: 0, dist: 0, spread: 0.3 }],
       schedule: [],
       designs: [looseCells()],
@@ -138,7 +138,7 @@ export function tutorials(): ExperimentDef[] {
       summary: 'Specialised tissues: leaves harvest light, roots feed the sheet.',
       category: 'tutorial',
       seed: 15,
-      params: { lightIntensity: 1, feedRate: 0.0015 },
+      params: { lightIntensity: 1, feedRate: 0.0015, mutationRate: 0 },
       inoculations: [{ designId: 'tut-tissue', count: 4, angle: 0, dist: 0, spread: 0.3 }],
       schedule: [],
       designs: [sameMat()],
@@ -195,7 +195,7 @@ export function experiments(): ExperimentDef[] {
       summary: 'Lysin Hunters arrive in a thriving grazer colony.',
       category: 'experiment',
       seed: 22,
-      params: { feedRate: 0.0028 },
+      params: { feedRate: 0.0016, maxPopulation: 700 },
       inoculations: [
         { designId: 'protocell', count: 25, angle: 0, dist: 0, spread: 0.7 },
         { designId: 'drifter', count: 20, angle: 0, dist: 0, spread: 0.7 },
@@ -203,7 +203,7 @@ export function experiments(): ExperimentDef[] {
       schedule: [{ tick: 800, kind: 'inoculate', designId: 'lysin-hunter', count: 6, angle: 0, dist: 0, spread: 0.2, label: 'Hunters released' }],
       designs: [protocell(), drifter(), lysinHunter()],
       goals: [
-        { id: 'g1', kind: 'population', designId: 'lysin-hunter', n: 40, label: 'Hunters reach 40' },
+        { id: 'g1', kind: 'population', designId: 'lysin-hunter', n: 18, label: 'Hunters establish a population of 18' },
         { id: 'g2', kind: 'survive', designId: 'protocell', ticks: 8000, label: 'Prey persists to tick 8000' },
       ],
     },
@@ -226,7 +226,7 @@ export function experiments(): ExperimentDef[] {
     {
       id: 'exp-thermal',
       name: 'Thermal Frontier',
-      summary: 'A steep west–east heat gradient. Watch lineages adapt to the hot side.',
+      summary: 'A steep west–east heat gradient. Protocells evolve heat tolerance while armoured Sentinels hold the hot side.',
       category: 'experiment',
       seed: 24,
       params: { heatPattern: 'linear', heatAmplitude: 0.45, mutationRate: 0.3 },
@@ -237,8 +237,9 @@ export function experiments(): ExperimentDef[] {
       schedule: [],
       designs: [protocell(), sentinel()],
       goals: [
-        { id: 'g1', kind: 'region', designId: 'protocell', angle: 0, dist: 0.7, r: 0.25, n: 15, label: 'Protocell descendants colonise the hot east' },
-        { id: 'g2', kind: 'depth', designId: 'protocell', n: 6, label: 'Lineage 6 mutations deep' },
+        { id: 'g1', kind: 'heatTolerance', designId: 'protocell', n: 15, label: 'Protocells evolve mean heat tolerance ±0.15', hint: 'Lineage → look for thicker membranes and shields' },
+        { id: 'g2', kind: 'region', designId: 'sentinel', angle: 0, dist: 0.3, r: 0.2, n: 25, label: 'Armoured Sentinels hold the hot frontier' },
+        { id: 'g3', kind: 'depth', designId: 'protocell', n: 6, label: 'Lineage 6 mutations deep' },
       ],
     },
     {
@@ -268,17 +269,20 @@ export function experiments(): ExperimentDef[] {
       summary: 'Murk floods the dish and no longer drains. Who can clean up?',
       category: 'experiment',
       seed: 26,
-      params: { murkDrain: 0, murkDecay: 0.0004, lightIntensity: 1 },
+      params: { murkDrain: 0, murkDecay: 0.0004, lightIntensity: 1.4, feedRate: 0.0009 },
       inoculations: [
         { designId: 'protocell', count: 15, angle: 0, dist: 0, spread: 0.6 },
         { designId: 'murk-eater', count: 8, angle: 0, dist: 0, spread: 0.6 },
       ],
       schedule: [
-        { tick: 600, kind: 'pulse', field: 'murk', angle: 0, dist: 0, r: 0.6, amount: 6, label: 'Murk bloom' },
-        { tick: 3000, kind: 'pulse', field: 'murk', angle: 90, dist: 0.4, r: 0.4, amount: 8, label: 'Second bloom' },
+        { tick: 600, kind: 'pulse', field: 'murk', angle: 0, dist: 0, r: 0.6, amount: 8, label: 'Murk bloom' },
+        { tick: 2000, kind: 'pulse', field: 'murk', angle: 0, dist: 0, r: 0.9, amount: 12, label: 'Dish-wide bloom' },
+        { tick: 3500, kind: 'pulse', field: 'murk', angle: 90, dist: 0.3, r: 0.8, amount: 12, label: 'Third bloom' },
+        { tick: 5000, kind: 'pulse', field: 'murk', angle: 200, dist: 0.3, r: 0.8, amount: 12, label: 'Fourth bloom' },
+        { tick: 6500, kind: 'pulse', field: 'murk', angle: 0, dist: 0, r: 0.9, amount: 12, label: 'Fifth bloom' },
       ],
       designs: [protocell(), murkEater()],
-      goals: [{ id: 'g1', kind: 'population', designId: 'murk-eater', n: 80, label: 'Murk Eaters reach 80' }],
+      goals: [{ id: 'g1', kind: 'population', designId: 'murk-eater', n: 60, label: 'Murk Eaters reach 60' }],
     },
     {
       id: 'exp-colonial',

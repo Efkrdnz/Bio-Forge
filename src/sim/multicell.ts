@@ -165,9 +165,10 @@ export function predation(w: World, c: Cell): void {
         if (Math.abs(wrapAngle(back - (v.angle + v.cd.ang[j]))) < 0.9) armor = 0.25;
       }
       const s = c.activity[i] * power;
-      const dmg = s * 0.1 * armor * (1 - v.cd.membrane.damageResist * 0.6);
+      const dmg = s * 0.16 * armor * (1 - v.cd.membrane.damageResist * 0.6);
       v.integrity -= dmg;
       v.damage.predation += dmg;
+      v.lastAttacker = c.id;
       // Siphon contents into the spike buffer (conserving matter)
       const f = Math.min(0.5, s * 0.05 * armor);
       for (const r of [R_SORB, R_LITH, R_CHARGE]) {
