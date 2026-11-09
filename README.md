@@ -34,14 +34,22 @@ npm run build
 ```
 
 ```bash
-node scripts/smoke.cjs http://localhost:5173/
+npm run smoke
 ```
 
-* `npm test` runs 70+ simulation tests: accounting, components, division,
-  signalling, bonds, persistence and performance.
+```bash
+npm run audit
+```
+
+* `npm test` runs 80+ simulation tests (Vitest).
 * `npm run build` typechecks and produces a production bundle in `dist/`.
-* `scripts/smoke.cjs` is an end-to-end browser test. It needs the dev server
+* `npm run smoke` runs two end-to-end browser tests. It needs `npm run dev`
   running and Playwright installed.
+* `npm run audit` plays every experiment headlessly for 8,000 ticks and
+  reports populations and goal status per lineage (a balance check).
+* Balancing tools: `npm run audit:tutorials`, `npm run viability`, and
+  `npm run bench` (per-phase timings), plus `scripts/trace1.ts` and
+  `scripts/budget.ts`, which trace one lineage inside an experiment.
 
 ## What you can do
 
@@ -186,25 +194,39 @@ glow sprites and a cell-count–aware detail budget.
 
 ## Quality checks
 
-* `npm test`, 70+ tests:
-  * Matter conservation in a busy ecosystem, and for brushes, culls and
-    inoculations
-  * Exact halving on division, matter returned on death
-  * Every component's behaviour; conduits speed transport; no
-    perpetual-motion loops
-  * Circuit truth tables, hysteresis, latch, delay, clock, feedback loops,
-    chemotaxis
-  * Division, fidelity, bonded development and budding, tissue rules
-  * Bonds, junction sharing, bond breakage, organism graphs, adhesion,
-    signal propagation down a chain
-  * Determinism of snapshot → restore → replay, and JSON round-trip
-  * Selection (a heat-tolerant design wins a hot dish)
-  * Each tutorial is solvable
-  * Performance: a dense 700-cell dish in a few ms per tick
-* `scripts/smoke.cjs` plays tutorial 1 in a real browser and exercises the
-  conduit tool, inspector, brushes and ledger, rewind, save/load slots, the
-  circuit and development editors, lineage, and a multicellular preset. It
-  fails on any console error.
+* **`npm test`, 82 tests:**
+  * Accounting: matter conservation in a busy ecosystem; brushes, culls and
+    inoculations ledgered; exact halving on division; full matter return on
+    death; conservation through predator feasts.
+  * Components: every component's behaviour; conduits speed transport; no
+    perpetual-motion loops; self-priming restart; growth checkpoint;
+    scavenger pores.
+  * Circuits: truth tables, hysteresis, latch, delay, clock, edge pulse,
+    feedback loops, actuators; sensor-driven chemotaxis; Murk Eater
+    homeostasis.
+  * Division: core and mass rules, fidelity, mutation and strains, bonded
+    development and budding, tissue rules, circuit-driven differentiation.
+  * Multicellular: bonds, slots, junction sharing, bond breakage, organism
+    graph splitting, adhesion action, signal waves down a chain, coordinated
+    swimming driven by a pacemaker.
+  * Persistence: snapshot → restore → replay is bit-identical; JSON
+    round-trip; robust loading of damaged designs.
+  * Evolution: mutation validity, lineage integrity, selection in a hot dish.
+  * Presets: every preset runs; tutorials 1, 2, 4 and 5 are solvable (and 2
+    is not solvable without the fix).
+  * Performance: a dense 700-cell dish in a few ms per tick; long-run
+    numerical stability; 28-component cells.
+* **`npm run smoke`, two Playwright passes:**
+  * The first plays tutorial 1 like a user and exercises the conduit tool,
+    the inspector, brushes with the ledger, rewind, save/load slots, circuit
+    wiring by drag, the development tab, lineage, and a multicellular preset.
+  * The second covers palette drag-and-drop, moving and deleting parts,
+    inoculate and lumen tools, every overlay, the environment controls, and
+    a dense-dish performance budget (renderer < 30 ms/frame of script,
+    sim < 9 ms/tick).
+  * Both fail on any console error.
+* **`npm run audit`**: every experiment's goals are reachable on its
+  default seed. Runs are deterministic, so the audit is reproducible.
 
 ## Keyboard
 

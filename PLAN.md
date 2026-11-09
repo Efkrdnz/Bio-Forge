@@ -143,4 +143,30 @@ lineage view.
 14. Docs: README, ASSUMPTIONS.md.
 
 ## 5. Status
-Tracked in git history; see README "Status" for what is complete.
+
+All 14 phases are complete:
+
+* Simulation core (30 components, 3 membranes, circuits, physics,
+  multicellularity, evolution, experiments, persistence)
+* Presets (11 organisms, 6 tutorials, 8 experiments)
+* Canvas renderer
+* Dish, Forge, Lineage and Experiments UIs
+* Documentation
+
+QA covers 82 unit tests, two browser smoke tests, and a balance audit of
+every experiment.
+
+Balancing changes made during QA, each found by tracing a failing lineage
+headlessly:
+
+* Self-priming energy acquirers fix a zero-charge deadlock.
+* A growth checkpoint stops cells from building biomass out of their last
+  fuel.
+* Predators feast on their kills, which allows stable predator–prey
+  coexistence.
+* Scavenger pores plus a homeostasis circuit make the Murk Eater niche
+  viable.
+* Lumen Mat founders can now feed.
+* Buds that found a new organism reset to the founder tissue, so swimmers
+  keep a pacemaker.
+* Tutorials 1–5 run without mutation, so the lessons stay controlled.

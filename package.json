@@ -3,14 +3,19 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "BIOFORGE — a synthetic-life sandbox of fictional cells, circuits, organisms and evolution.",
+  "description": "BIOFORGE \u2014 a synthetic-life sandbox of fictional cells, circuits, organisms and evolution.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "smoke": "node scripts/smoke.cjs http://localhost:5173/ && node scripts/smoke-ui.cjs http://localhost:5173/",
+    "audit": "tsx scripts/experiments.ts",
+    "audit:tutorials": "tsx scripts/tutorials.ts all",
+    "viability": "tsx scripts/viability.ts",
+    "bench": "tsx scripts/phases.ts"
   },
   "dependencies": {
     "@fontsource/jetbrains-mono": "^5.3.0",
